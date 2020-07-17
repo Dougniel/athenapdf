@@ -31,7 +31,7 @@ const addHeader = (header, arr) => {
 app.commandLine.appendArgument("disable-dev-shm-usage");
 
 athena
-    .version("2.16.0")
+    .version("2.16.1")
     .description("convert HTML to PDF via stdin or a local / remote URI")
     .option("--debug", "show GUI", false)
     .option("-T, --timeout <seconds>", "seconds before timing out (default: 120)", parseInt)
@@ -71,7 +71,7 @@ if (!uriArg) {
 if (uriArg === "-") {
     let base64Html = new Buffer(rw.readFileSync("/dev/stdin", "utf8"), "utf8").toString("base64");
     uriArg = "data:text/html;base64," + base64Html;
-// Handle local paths
+    // Handle local paths
 } else if (!uriArg.toLowerCase().startsWith("http") && !uriArg.toLowerCase().startsWith("chrome://")) {
     uriArg = url.format({
         protocol: "file",
@@ -140,9 +140,9 @@ const loadOpts = {
 
 // Enum for Electron's marginType codes
 const MarginEnum = {
-  "standard": 0,
-  "none": 1,
-  "minimal": 2,
+    "standard": 0,
+    "none": 1,
+    "minimal": 2,
 };
 
 const pdfOpts = {
@@ -198,12 +198,12 @@ app.on("ready", () => {
         ses.webRequest.onBeforeSendHeaders((details, callback) => {
             if (details.resourceType === "mainFrame") {
                 if (!_inCookieWhitelist(details.url)) {
-                   delete details.requestHeaders["Cookie"];
+                    delete details.requestHeaders["Cookie"];
                 }
                 details.requestHeaders["Referer"] = "https://www.google.com/";
                 details.requestHeaders["User-Agent"] = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
             }
-            callback({cancel: false, requestHeaders: details.requestHeaders});
+            callback({ cancel: false, requestHeaders: details.requestHeaders });
         });
     }
 
@@ -245,10 +245,7 @@ app.on("ready", () => {
     }
 
     const printToPDF = () => {
-        bw.webContents.printToPDF(pdfOpts, (err, data) => {
-            if (err) console.error(err);
-            _output(data);
-        });
+        bw.webContents.printToPDF(pdfOpts).then((data) => _output(data), (err) => console.error(err));
     };
 
     bw.webContents.executeJavaScript(plugins).then(() => {
