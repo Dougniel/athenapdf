@@ -1,15 +1,29 @@
-FROM arachnysdocker/athenapdf
-MAINTAINER Arachnys <techteam@arachnys.com>
+FROM golang:1.10-alpine AS build
+WORKDIR /go/src/github.com/arachnys/athenapdf/weaver
+
+RUN apk add --update git
+RUN go get -u github.com/golang/dep/cmd/dep
+
+COPY Gopkg.lock Gopkg.toml ./
+RUN dep ensure --vendor-only -v
+
+COPY . ./
+
+RUN \
+  CGO_ENABLED=0 go build -v -o weaver .
+  
+FROM dougniel/athenapdf
 
 ENV GIN_MODE release
 
-RUN \
-  wget https://github.com/Yelp/dumb-init/releases/download/v1.0.0/dumb-init_1.0.0_amd64.deb \
-  && dpkg -i dumb-init_*.deb \
-  && rm dumb-init_*.deb \
-  && mkdir -p /athenapdf-service/tmp/
+RUN apt-get -yq update && apt-get -yq install --no-install-recommends \
+    dumb-init \
+    && apt-get -yq autoremove \
+    && apt-get -yq clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && truncate -s 0 /var/log/*log
 
-COPY build/weaver /athenapdf-service/
+COPY --from=build /go/src/github.com/arachnys/athenapdf/weaver /athenapdf-service/
 WORKDIR /athenapdf-service/
 
 ENV PATH /athenapdf-service/:$PATH
